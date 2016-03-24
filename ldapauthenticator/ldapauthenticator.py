@@ -1,10 +1,14 @@
 import ldap3
 import re
+import time
+import pipes
+import pwd
+from subprocess import Popen, PIPE, STDOUT
 from jupyterhub.auth import Authenticator
 
 from tornado import gen
 from traitlets import Unicode, Int, Bool, Union, List
-
+from jupyterhub.traitlets import Command
 
 class LDAPAuthenticator(Authenticator):
     server_address = Unicode(
@@ -64,6 +68,28 @@ class LDAPAuthenticator(Authenticator):
         """
     )
 
+    add_local_user = Bool(
+        False,
+        config=True,
+        help='Create a local user on login if none exists'
+    )
+    add_user_cmd = Command(config=True,
+        help="""The command to use for creating users as a list of strings.
+        
+        For each element in the list, the string USERNAME will be replaced with
+        the user's username. The username will also be appended as the final argument
+        For example this:
+            ['adduser', '-q', '--gecos', '""', '--home', '/customhome/USERNAME', '--disabled-password']
+        will run the command:
+        adduser -q --gecos "" --home /customhome/river --disabled-password river
+        
+        when the user 'river' is created.
+        """
+    )
+    def _add_user_cmd_default(self):
+        return ['adduser', '-q', '--force-badname', '--gecos', '""', '--disabled-password']
+
+
     @gen.coroutine
     def authenticate(self, handler, data):
         username = data['username']
@@ -103,3 +129,18 @@ class LDAPAuthenticator(Authenticator):
         else:
             self.log.warn('Invalid password')
             return None
+
+    def pre_spawn_start(self, user, spawner):
+        if self.add_local_user:
+            try:
+                pwd.getpwnam(user.name)
+            except KeyError:
+                name = user.name
+                cmd = [ arg.replace('USERNAME', name) for arg in self.add_user_cmd ] + [name]
+                self.log.info("Creating user: %s", ' '.join(map(pipes.quote, cmd)))
+                p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
+                time.sleep(5)
+                if p.returncode:
+                    err = p.stdout.read().decode('utf8', 'replace')
+                    raise RuntimeError("Failed to create system user %s: %s" % (name, err))
+        return None
