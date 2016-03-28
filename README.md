@@ -5,6 +5,19 @@ This authenticator has been edited from the original to include a
 pre-spawning function to create a user on the host machine for each
 authenticated LDAP username.
 
+## Installation ##
+
+You can install it from pip with:
+
+```
+pip install jupyterhub-ldapauthenticator
+```
+
+## Requirements ##
+
+I've only tested with python3 - anyone willing to test with python2
+is welcome to do so! There's no reason it shouldn't work.
+
 ## Usage ##
 
 You can enable this authenticator with the following lines in your
