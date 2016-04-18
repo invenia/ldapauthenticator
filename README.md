@@ -1,9 +1,13 @@
-# ldapauthenticator
-Simple LDAP Authenticator Plugin for Jupyter
+# localldapauthenticator
+Simple LDAP Authenticator Plugin for Jupyter.
+
+This authenticator has been edited from the original to include a
+pre-spawning function to create a user on the host machine for each
+authenticated LDAP username.
 
 ## Usage ##
 
-You can enable this authenticator with the folling lines in your
+You can enable this authenticator with the following lines in your
 `jupyter_config.py`:
 
 ```python
@@ -71,6 +75,17 @@ the LDAP server. Highly recommended that this be left to `True`
 
 Port to use to contact the LDAP server. Defaults to 389 if no SSL
 is being used, and 636 is SSL is being used.
+
+#### `LDAPAuthenticator.add_local_user` ####
+
+Boolean to specify whether to create a user on the host machine 
+corresponding to the authenticated user if they do not already
+exist.
+
+#### `LDAPAuthenticator.add_user_cmd` ####
+
+The command to use to create the user on the host machine. The
+username will be appended to the end of the command.
 
 ## Compatibility ##
 
